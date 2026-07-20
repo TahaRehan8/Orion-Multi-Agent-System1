@@ -13,6 +13,7 @@ pandas
 numpy
 statsmodels
 plotly
+kaleido
 
 # File Handling & Export
 python-docx
