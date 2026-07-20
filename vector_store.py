@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct, Filter
 from embeddings import get_embedding, get_embeddings_batch
-from sentence_transformers import CrossEncoder
+from fastembed.rerank.cross_encoder import TextCrossEncoder
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 PERSIST_DIR = os.path.join(PROJECT_ROOT, "qdrant_db")
@@ -39,8 +39,8 @@ _cross_encoder = None
 def get_cross_encoder():
     global _cross_encoder
     if _cross_encoder is None:
-        print("  [VectorStore] Loading Cross-Encoder model...")
-        _cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+        print("  [VectorStore] Loading Cross-Encoder model (ONNX)...")
+        _cross_encoder = TextCrossEncoder(model_name="Xenova/ms-marco-MiniLM-L-6-v2")
     return _cross_encoder
 
 
@@ -283,8 +283,8 @@ def query_collection_diverse(
 
     # 4. Cross-Encoder Re-ranking
     model = get_cross_encoder()
-    pairs = [[query, doc] for doc in cand_docs]
-    scores = model.predict(pairs)
+    pairs = [(query, doc) for doc in cand_docs]
+    scores = np.array(list(model.predict(pairs)))
     
     # Normalize Cross-Encoder scores to [0, 1] range for MMR
     if len(scores) > 0:
