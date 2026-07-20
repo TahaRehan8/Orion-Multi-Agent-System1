@@ -24,3 +24,8 @@ python-dotenv
 httpx
 gTTS
 langfuse
+
+# AI & ML
+joblib
+scikit-learn
+sentence-transformers
