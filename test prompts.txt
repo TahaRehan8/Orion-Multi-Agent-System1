@@ -1,0 +1,44 @@
+I need a report on the Sales department. Extract all transactions created by 'Managers' or 'Leads' in Sales for January. Contrast this with the average tenure (HireDate) of our Sales team. Are our senior people spending more than the juniors?
+Based on that spend, we need to schedule a 'Recruitment Strategy' session. Find a time on Jan 20th or 21st that doesn't conflict with any existing 'Marketing' or 'Finance' conferences. Also, tell me who the highest-paid person in Marketing is so I can ensure they are invited.
+Find the department that has created the most transactions this month. For that specific department, I need a 'Health Check': what is the average VacationRemaining for its employees, and how many of them have a PerformanceScore below 3.0? Also, tell me the total amount spent by that department on 'Training' vs. 'Recruitment'.
+Marketing is asking for more budget for new hires. First, tell me how much we've spent on 'Ads' and 'Events' this month. Then, tell me how many 'Marketing' employees we currently have and how much 'VacationRemaining' they have on average. Are they overworked?
+It looks like they are under pressure. I want to schedule a 90-minute 'Strategy Pivot' meeting on Jan 22nd. Find a time where there are no 'Team Sync' or 'Deadline Review' events. Also, list the names of the 'Directors' or 'Senior' staff in that department who are 'Remote' so I can send them digital vouchers for the meeting.
+I need to compare 'On-site' employees versus 'Remote' employees. Calculate the total 'Travel', 'Meals', and 'Logistics' expenses for each group. You'll need to check the created_by field in the finance data and match those people to their RemoteStatus in HR. Which group is costing us more in auxiliary expenses?
+Compare the average PerformanceScore of the 'On-site' group vs the 'Remote' group. If Remote is performing better, find a 2-hour window on Jan 14th or 15th to discuss 'Office Downsizing' with the Finance Manager. Check the calendar for any 'Conference' events that might conflict.
+
+================================================================================
+NEW FEATURE TEST PROMPTS
+================================================================================
+
+--- ARIMA FORECASTING (Finance Agent) ---
+Forecast the next 3 months of revenue based on current trends.
+Can you predict future expenses for the next quarter?
+Give me a projection of our financial performance for the upcoming months.
+What will our revenue look like in the next 3 periods?
+
+--- ANOMALY DETECTION (Finance Agent) ---
+Are there any anomalies in our January expenses?
+Detect any unusual transactions or outliers in the financial data.
+Find any abnormal spending patterns in the budget.
+Check for variance anomalies in our costs this month.
+
+--- CHART AGENT (Visualizations) ---
+Show me a bar chart of employee count by department.
+Create a pie chart of expense distribution by category.
+Generate a line chart showing revenue trends over time.
+Visualize the salary distribution across departments.
+Plot a scatter chart of performance scores vs salary.
+
+--- SQL AGENT (Data Queries) ---
+Query the total salary by department.
+Show me the sum of all expenses grouped by category.
+Count the number of employees in each department.
+What is the average salary for remote employees?
+Get the top 5 highest paid employees.
+Filter employees with performance score above 4.0.
+
+--- COMBINED / MULTI-AGENT QUERIES ---
+Show me a chart of department budgets and also forecast next month's expenses.
+Find anomalies in spending and visualize them in a graph.
+Query employees by department and show a bar chart of the results.
+Compare remote vs on-site salaries and detect any anomalies.

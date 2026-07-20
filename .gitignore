@@ -1,0 +1,59 @@
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Virtual environments
+.venv/
+venv/
+myenv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js build output
+frontend_next/.next/
+frontend_next/out/
+frontend_next/build/
+
+# Local databases
+orion_auth.db
+qdrant_db/
+chroma_db/
+
+# Logs and outputs
+outputs/
+*.log
+scratch/
+build_log.txt
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Large binary files & Data
+*.docx
+*.psd
+*.pdf
+data/
+assets/
+Open Router Key.txt

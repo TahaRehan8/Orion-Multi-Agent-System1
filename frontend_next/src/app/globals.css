@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #111317;
+  --color-surface: #1a1c20;
+  --color-surface-dim: #0c0e12;
+  --color-primary: #00f0ff;
+  --color-primary-dim: rgba(0, 240, 255, 0.4);
+  --color-secondary: #bf5af2;
+  --color-secondary-dim: rgba(191, 90, 242, 0.4);
+  --color-glass: rgba(255, 255, 255, 0.04);
+  --color-glass-border: rgba(255, 255, 255, 0.12);
+  --color-text: #e2e2e8;
+  --color-text-muted: #b9cacb;
+}
+
+@layer base {
+  :root {
+    --background: #111317;
+    --foreground: #e2e2e8;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', sans-serif;
+    /* Deep space background with subtle radial gradient */
+    background-image: radial-gradient(circle at 50% 0%, #1e2024 0%, #111317 60%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-[var(--color-glass)] border border-[var(--color-glass-border)] backdrop-blur-md rounded-2xl shadow-lg;
+  }
+  
+  .glass-input {
+    @apply bg-black/40 border-b-2 border-transparent focus:border-[var(--color-secondary)] focus:outline-none transition-colors duration-300;
+  }
+  
+  .neon-glow-primary {
+    box-shadow: 0 0 20px var(--color-primary-dim);
+  }
+  
+  .neon-glow-secondary {
+    box-shadow: 0 0 20px var(--color-secondary-dim);
+  }
+
+  /* Custom Scrollbar for chat area */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-glass-border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary-dim);
+  }
+}

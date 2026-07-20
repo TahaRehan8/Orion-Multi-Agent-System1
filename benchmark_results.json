@@ -1,0 +1,173 @@
+{
+  "rl_policy_improvement_finance": {
+    "test": "RL Policy Improvement",
+    "metric": "absolute_success_delta_pct_points",
+    "metric_switched": false,
+    "score": 10.0,
+    "target": 10.0,
+    "passed": true,
+    "valid": true,
+    "case_meta": {
+      "smart": 30,
+      "edge": 30,
+      "used": 10
+    },
+    "pre": {
+      "agent_id": "finance",
+      "passed": 9,
+      "total": 10,
+      "failed": 1,
+      "success_rate": 90.0,
+      "crash_rate": 10.0,
+      "fail_samples": [
+        {
+          "input": "Generate a 12-month cash flow forecast starting from next month, assuming a 10% increase in sales but a 15% rise in operational costs.",
+          "error": "'list' object has no attribute 'lower'",
+          "failure_reason": null,
+          "actual_output": null
+        }
+      ]
+    },
+    "post": {
+      "agent_id": "finance_rl",
+      "passed": 10,
+      "total": 10,
+      "failed": 0,
+      "success_rate": 100.0,
+      "crash_rate": 10.0,
+      "fail_samples": []
+    },
+    "n_cases": 10,
+    "pre_crash_rate": 10.0,
+    "post_crash_rate": 10.0
+  },
+  "cross_agent_cotraining_bidirectional_hr_finance": {
+    "test": "Cross-Agent Co-Training (Bidirectional)",
+    "metric": "avg_absolute_success_delta_pct_points",
+    "score": 0.0,
+    "target": 15.0,
+    "passed": false,
+    "valid": true,
+    "a_on_b": {
+      "test": "Cross-Agent Co-Training",
+      "metric": "success_delta_minus_crash_penalty_pct_points",
+      "score": 0.0,
+      "target": 15.0,
+      "passed": false,
+      "valid": true,
+      "case_meta": {
+        "smart": 30,
+        "edge": 30,
+        "used": 10
+      },
+      "peer_agent_id": "finance",
+      "pre": {
+        "agent_id": "hr",
+        "passed": 10,
+        "total": 10,
+        "failed": 0,
+        "success_rate": 100.0,
+        "crash_rate": 0.0,
+        "fail_samples": []
+      },
+      "post": {
+        "agent_id": "hr_rl",
+        "passed": 10,
+        "total": 10,
+        "failed": 0,
+        "success_rate": 100.0,
+        "crash_rate": 0.0,
+        "fail_samples": []
+      },
+      "n_cases": 10,
+      "pre_crash_rate": 0.0,
+      "post_crash_rate": 0.0,
+      "raw_success_delta": 0.0,
+      "crash_penalty": 0.0
+    },
+    "b_on_a": {
+      "test": "Cross-Agent Co-Training",
+      "metric": "success_delta_minus_crash_penalty_pct_points",
+      "score": 0.0,
+      "target": 15.0,
+      "passed": false,
+      "valid": true,
+      "case_meta": {
+        "smart": 30,
+        "edge": 16,
+        "used": 10
+      },
+      "peer_agent_id": "hr",
+      "pre": {
+        "agent_id": "finance",
+        "passed": 3,
+        "total": 10,
+        "failed": 7,
+        "success_rate": 30.0,
+        "crash_rate": 0.0,
+        "fail_samples": [
+          {
+            "input": "Can you pull up the latest performance review scores for the Marketing team from Q2 2024?",
+            "error": null,
+            "failure_reason": null,
+            "actual_output": ""
+          },
+          {
+            "input": "I need the total headcount for the Engineering department, including contractors and part-time employees. Break it down by location if possible.",
+            "error": null,
+            "failure_reason": null,
+            "actual_output": ""
+          },
+          {
+            "input": "What\u2019s the average salary range for a Senior Software Engineer in the New York office? Include any bonuses or equity in the calculation.",
+            "error": null,
+            "failure_reason": null,
+            "actual_output": ""
+          }
+        ]
+      },
+      "post": {
+        "agent_id": "finance_rl",
+        "passed": 3,
+        "total": 10,
+        "failed": 7,
+        "success_rate": 30.0,
+        "crash_rate": 0.0,
+        "fail_samples": [
+          {
+            "input": "Can you pull up the latest performance review scores for the Marketing team from Q2 2024?",
+            "error": null,
+            "failure_reason": null,
+            "actual_output": ""
+          },
+          {
+            "input": "I need the total headcount for the Engineering department, including contractors and part-time employees. Break it down by location if possible.",
+            "error": null,
+            "failure_reason": null,
+            "actual_output": ""
+          },
+          {
+            "input": "What\u2019s the average salary range for a Senior Software Engineer in the New York office? Include any bonuses or equity in the calculation.",
+            "error": null,
+            "failure_reason": null,
+            "actual_output": ""
+          }
+        ]
+      },
+      "n_cases": 10,
+      "pre_crash_rate": 0.0,
+      "post_crash_rate": 0.0,
+      "raw_success_delta": 0.0,
+      "crash_penalty": 0.0
+    },
+    "n_cases": 10
+  },
+  "metadata": {
+    "timestamp": "2026-03-22T01:32:39.224002",
+    "total_time_seconds": 839.1,
+    "system": "Orion Multi-Agent RAG System",
+    "judge_model": "mistral-large-latest",
+    "agent_model": "mistral-small-latest",
+    "orchestrator_model": "mistral-large-latest"
+  }
+}
