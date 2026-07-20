@@ -1,3 +1,18 @@
+import sys
+
+# --- HUGGING FACE SPACES HACK ---
+# Hugging Face's ZeroGPU SDK forces an old version of Gradio (4.36.1) that looks for 'HfFolder'.
+# However, Hugging Face recently removed 'HfFolder' from their 'huggingface_hub' library!
+# We monkey-patch it here before importing Gradio so the server doesn't crash on startup.
+try:
+    import huggingface_hub
+    if not hasattr(huggingface_hub, 'HfFolder'):
+        class HfFolder:
+            pass
+        huggingface_hub.HfFolder = HfFolder
+except Exception:
+    pass
+
 import gradio as gr
 from backend.api import app as fastapi_app
 
