@@ -559,7 +559,7 @@ Agent Results:
 Provide a cohesive, well-organized response that combines insights from all agents. 
 Format the response clearly with sections if multiple topics are covered.
 Be concise but comprehensive.
-IMPORTANT: If any Agent Result contains a Markdown image (e.g., ![Title](http...)), you MUST include the EXACT markdown image syntax in your final response without modification."""
+IMPORTANT: If any Agent Result contains a Markdown image (e.g., ![Title](http...)), you MUST display it directly in your final response. Do NOT wrap the image link in backticks or code blocks. Just put the raw ![Title](url) on its own line."""
 
         try:
             raw = generate_with_thinking(synthesis_prompt)
@@ -570,6 +570,9 @@ IMPORTANT: If any Agent Result contains a Markdown image (e.g., ![Title](http...
         import re
         images = re.findall(r'!\[.*?\]\(.*?\)', results_text)
         for img in images:
+            # Mistral often wraps URLs in backticks. Strip them if they exist.
+            raw = raw.replace(f"`{img}`", img)
+            raw = raw.replace(f"```\n{img}\n```", img)
             if img not in raw:
                 raw += f"\n\n{img}"
 

@@ -62,3 +62,37 @@
     background: var(--color-primary-dim);
   }
 }
+
+@media print {
+  /* Hide sidebars, input area, and quick prompts */
+  aside, .no-print {
+    display: none !important;
+  }
+  
+  /* Expand main area */
+  body, main {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    background-color: #111317 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Remove scroll limitations so all messages print */
+  .glass-panel {
+    overflow: visible !important;
+    height: auto !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Prevent page breaks inside messages */
+  .flex-col > div {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

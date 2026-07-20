@@ -118,17 +118,14 @@ async def root():
         "endpoints": ["/health", "/agents", "/chat", "/chat/stream"]
     }
 
-@app.post("/tts", tags=["System"])
-async def text_to_speech(req: TTSRequest):
+@app.get("/tts", tags=["System"])
+async def text_to_speech(text: str):
     """Generate audio from text using gTTS and return as a stream"""
-    if not req.text.strip():
+    if not text.strip():
         raise HTTPException(status_code=400, detail="Text is required")
     try:
-        tts = gTTS(req.text, lang='en')
-        fp = BytesIO()
-        tts.write_to_fp(fp)
-        fp.seek(0)
-        return StreamingResponse(fp, media_type="audio/mpeg")
+        tts = gTTS(text, lang='en')
+        return StreamingResponse(tts.stream(), media_type="audio/mpeg")
     except Exception as e:
         print(f"[TTS ERROR] {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -431,12 +428,11 @@ from pathlib import Path
 DATA_PATH = Path(__file__).parent.parent / "data"
 OUTPUT_PATH = Path(__file__).parent.parent / "outputs"
 GRAPHS_PATH = OUTPUT_PATH / "graphs"
+EXPORTS_PATH = OUTPUT_PATH / "exports"
 
-# Ensure graphs directory exists
+# Ensure directories exist
 GRAPHS_PATH.mkdir(parents=True, exist_ok=True)
-
-# Mount static files for graph images - allows frontend to access graphs via /graphs/{filename}
-app.mount("/graphs", StaticFiles(directory=str(GRAPHS_PATH)), name="graphs")
+EXPORTS_PATH.mkdir(parents=True, exist_ok=True)
 
 @app.get("/graphs", tags=["Graphs"])
 async def list_graphs():
@@ -445,10 +441,9 @@ async def list_graphs():
         files = list(GRAPHS_PATH.glob("*.png"))
         graphs = []
         for f in sorted(files, key=os.path.getmtime, reverse=True):
-            backend_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
             graphs.append({
                 "name": f.name,
-                "url": f"{backend_url}/graphs/{f.name}",
+                "url": f"http://localhost:8000/graphs/{f.name}",
                 "size": f.stat().st_size
             })
         return {"success": True, "graphs": graphs}
@@ -465,10 +460,13 @@ async def get_latest_graph():
             
         # Get the most recently modified file
         latest_file = max(files, key=os.path.getmtime)
-        backend_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
-        return {"success": True, "filename": latest_file.name, "url": f"{backend_url}/graphs/{latest_file.name}"}
+        return {"success": True, "filename": latest_file.name, "url": f"http://localhost:8000/graphs/{latest_file.name}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+# Mount static files for graph images and exports - must be AFTER specific routes to prevent 404 shadowing
+app.mount("/graphs", StaticFiles(directory=str(GRAPHS_PATH)), name="graphs")
+app.mount("/exports", StaticFiles(directory=str(EXPORTS_PATH)), name="exports")
 
 class ExportRequest(BaseModel):
     """Request model for export endpoint"""
@@ -566,6 +564,13 @@ async def export_csv(request: ExportRequest = None):
         
         filename = request.filename if request and request.filename else None
         result = do_export_csv(df, filename)
+        
+        if result.get("success") and result.get("file_path"):
+            # Extract filename from path and create download URL
+            file_name = Path(result["file_path"]).name
+            result["url"] = f"http://localhost:8000/exports/{file_name}"
+            result["filename"] = file_name
+            
         return result
         
     except Exception as e:

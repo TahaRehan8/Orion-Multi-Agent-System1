@@ -21,7 +21,10 @@ import {
   FlaskConical,
   MessageSquare,
   Volume2,
-  Square
+  Square,
+  Copy,
+  Check,
+  Trash2
 } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -72,7 +75,26 @@ export default function Dashboard() {
   const [savedGraphs, setSavedGraphs] = useState<any[]>([]);
   const [exporting, setExporting] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleCopy = (id: string, content: string) => {
+    navigator.clipboard.writeText(content);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const clearChat = () => {
+    if (confirm("Are you sure you want to clear the chat history?")) {
+      const welcomeMsg = {
+        id: 'welcome',
+        role: 'assistant',
+        content: '# System Online\nWelcome to the Orion Multi-Agent RAG Orchestrator.',
+      };
+      setMessages([welcomeMsg]);
+      sessionStorage.setItem('orion_chat_history', JSON.stringify([welcomeMsg]));
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -94,14 +116,37 @@ export default function Dashboard() {
     fetchAgents();
     fetchDocuments();
     fetchGraphs();
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content: '# System Online\nWelcome to the Orion Multi-Agent RAG Orchestrator.',
+    
+    const savedChat = sessionStorage.getItem('orion_chat_history');
+    if (savedChat) {
+      try {
+        setMessages(JSON.parse(savedChat));
+      } catch (e) {
+        setMessages([
+          {
+            id: 'welcome',
+            role: 'assistant',
+            content: '# System Online\nWelcome to the Orion Multi-Agent RAG Orchestrator.',
+          }
+        ]);
       }
-    ]);
+    } else {
+      setMessages([
+        {
+          id: 'welcome',
+          role: 'assistant',
+          content: '# System Online\nWelcome to the Orion Multi-Agent RAG Orchestrator.',
+        }
+      ]);
+    }
   }, []);
+
+  // Save chat to session storage whenever it updates
+  useEffect(() => {
+    if (messages.length > 0) {
+      sessionStorage.setItem('orion_chat_history', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -135,9 +180,38 @@ export default function Dashboard() {
         .replace(/[#*`_~-]/g, '')
         .trim();
         
-      console.log("[Speech] Attempting to synthesize backend text:", cleanText);
+      // Extract the actual substance
+      let textLines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       
-      if (!cleanText) {
+      // Skip the generic LLM intro sentence if it's there
+      if (textLines.length > 1 && textLines[0].length < 100 && 
+         /here is|based on|the data|the chart|i have|as requested/i.test(textLines[0])) {
+        textLines.shift();
+      }
+      
+      let summaryText = textLines.join('. ');
+      
+      // Fix date pronunciation for TTS (so it doesn't read dashes as "minus")
+      let ttsText = summaryText.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (match, y, m, d) => {
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        return `${months[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+      });
+      ttsText = ttsText.replace(/\b(\d{2})-(\d{2})-(\d{4})\b/g, (match, d, m, y) => {
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        return `${months[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+      });
+      
+      // Strip out raw URLs
+      ttsText = ttsText.replace(/https?:\/\/[^\s]+/g, '');
+      
+      // Strip out ugly backend filenames or absolute paths
+      ttsText = ttsText.replace(/graph_[a-z]+_\d+_\d+\.png/g, 'the generated chart');
+      ttsText = ttsText.replace(/\/(home|opt|usr|var)\/[^\s]+/g, '');
+      ttsText = ttsText.replace(/Chart saved locally at:\s*/g, 'Chart saved. ');
+        
+      console.log("[Speech] Attempting to synthesize backend text:", ttsText);
+      
+      if (!ttsText) {
         console.warn("[Speech] No text remaining to read.");
         return;
       }
@@ -145,21 +219,13 @@ export default function Dashboard() {
       setPlayingId(id);
       
       try {
-        const response = await fetch(`${API_BASE_URL}/tts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ text: cleanText })
-        });
+        // By passing the URL directly to the Audio object, the browser handles 
+        // the chunked HTTP stream natively and starts playing instantly!
+        const audioUrl = `${API_BASE_URL}/tts?text=${encodeURIComponent(ttsText)}`;
+        const audio = new Audio(audioUrl);
         
-        if (!response.ok) {
-          throw new Error(`Failed to generate TTS. Status: ${response.status}`);
-        }
-        
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
+        // Increase playback speed slightly for a snappier feel
+        audio.playbackRate = 1.2;
         
         audio.onended = () => setPlayingId(null);
         audio.onerror = (e) => {
@@ -233,10 +299,10 @@ export default function Dashboard() {
         body: JSON.stringify({ data_type: type })
       });
       const data = await res.json();
-      if (data.success) {
-        alert(`Exported successfully to: ${data.file_path}`);
+      if (data.success && data.url) {
+        forceDownload(data.url, data.filename || `export_${type}.csv`);
       } else {
-        alert(`Export failed: ${data.error}`);
+        alert(`Export failed: ${data.error || 'Unknown error'}`);
       }
     } catch (e) {
       console.error("Export error", e);
@@ -245,18 +311,30 @@ export default function Dashboard() {
     }
   };
 
+  const forceDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      console.error("Download failed, opening in new tab", e);
+      window.open(url, '_blank');
+    }
+  };
+
   const handleDownloadLatestChart = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/graphs/latest`);
       const data = await res.json();
       if (data.success && data.url) {
-        // Trigger download
-        const a = document.createElement('a');
-        a.href = data.url;
-        a.download = data.filename || 'chart.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        forceDownload(data.url, data.filename || 'chart.png');
       } else {
         alert(data.error || 'No charts available to download yet.');
       }
@@ -332,6 +410,7 @@ export default function Dashboard() {
                   msg.id === assistantId ? { ...msg, content: finalContent, isStreaming: false } : msg
                 ));
                 setActiveTask(null);
+                fetchGraphs();
               }
               else if (data.type === 'final') {
                 finalContent = data.response;
@@ -339,6 +418,7 @@ export default function Dashboard() {
                   msg.id === assistantId ? { ...msg, content: finalContent, isStreaming: false } : msg
                 ));
                 setActiveTask(null);
+                fetchGraphs();
               }
               else if (data.type === 'error') {
                 finalContent = `**Error:** ${data.message}`;
@@ -455,17 +535,26 @@ export default function Dashboard() {
                       </span>
                     </div>
                     {msg.content && !msg.isStreaming && (
-                      <button 
-                        onClick={() => toggleSpeech(msg.id, msg.content)}
-                        className={`p-1.5 rounded-md transition-colors ${
-                          playingId === msg.id 
-                            ? 'bg-[var(--color-secondary-dim)] text-[var(--color-secondary)]' 
-                            : 'hover:bg-white/10 text-gray-400 hover:text-white'
-                        }`}
-                        title={playingId === msg.id ? "Stop reading" : "Read aloud"}
-                      >
-                        {playingId === msg.id ? <Square size={14} fill="currentColor" /> : <Volume2 size={14} />}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => handleCopy(msg.id, msg.content)}
+                          className="p-1.5 rounded-md transition-colors hover:bg-white/10 text-gray-400 hover:text-white"
+                          title="Copy to clipboard"
+                        >
+                          {copiedId === msg.id ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                        </button>
+                        <button 
+                          onClick={() => toggleSpeech(msg.id, msg.content)}
+                          className={`p-1.5 rounded-md transition-colors ${
+                            playingId === msg.id 
+                              ? 'bg-[var(--color-secondary-dim)] text-[var(--color-secondary)]' 
+                              : 'hover:bg-white/10 text-gray-400 hover:text-white'
+                          }`}
+                          title={playingId === msg.id ? "Stop reading" : "Read aloud"}
+                        >
+                          {playingId === msg.id ? <Square size={14} fill="currentColor" /> : <Volume2 size={14} />}
+                        </button>
+                      </div>
                     )}
                   </>
                 ) : (
@@ -473,14 +562,14 @@ export default function Dashboard() {
                 )}
               </div>
               
-              <div className={`p-4 rounded-2xl ${msg.role === 'user' ? 'bg-[var(--color-secondary-dim)] border border-[var(--color-secondary)]/30 text-white rounded-tr-sm' : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-sm shadow-xl'}`}>
+              <div className={`p-4 rounded-2xl min-w-0 max-w-full overflow-x-auto ${msg.role === 'user' ? 'bg-[var(--color-secondary-dim)] border border-[var(--color-secondary)]/30 text-white rounded-tr-sm' : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-sm shadow-xl'}`}>
                 {msg.role === 'assistant' && msg.isStreaming && !msg.content ? (
                   <div className="flex items-center gap-3 text-cyan-200">
                     <Loader2 size={18} className="animate-spin" />
                     <span className="text-sm italic">{activeTask}</span>
                   </div>
                 ) : (
-                  <div className="text-sm md:text-base space-y-4">
+                  <div className="text-sm md:text-base space-y-4 w-full min-w-0 break-words">
                     <Markdown 
                       options={{
                         overrides: {
@@ -491,22 +580,22 @@ export default function Dashboard() {
                           },
                           p: {
                             props: {
-                              className: "leading-relaxed"
+                              className: "leading-relaxed break-words whitespace-pre-wrap"
                             }
                           },
                           pre: {
                             props: {
-                              className: "bg-black/50 border border-white/10 p-4 rounded-lg overflow-x-auto my-2"
+                              className: "bg-black/50 border border-white/10 p-4 rounded-lg overflow-x-auto my-2 max-w-full"
                             }
                           },
                           table: {
                             props: {
-                              className: "w-full border-collapse my-4"
+                              className: "w-full border-collapse my-4 block overflow-x-auto"
                             }
                           },
                           th: {
                             props: {
-                              className: "border border-white/20 p-3 bg-white/5"
+                              className: "border border-white/20 p-3 bg-white/5 whitespace-nowrap"
                             }
                           },
                           td: {
@@ -528,8 +617,17 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Prompts */}
-        <div className="px-4">
-          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2 ml-1">Quick Prompts</h3>
+        <div className="px-4 no-print">
+          <div className="flex justify-between items-center mb-2 ml-1">
+            <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Quick Prompts</h3>
+            <button 
+              onClick={clearChat}
+              className="text-xs flex items-center gap-1 text-red-400/80 hover:text-red-300 transition-colors"
+              title="Clear entire chat history"
+            >
+              <Trash2 size={12} /> Clear Chat
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {QUICK_PROMPTS.map((prompt, idx) => (
               <button 
@@ -545,7 +643,7 @@ export default function Dashboard() {
         </div>
 
         {/* Input Area */}
-        <div className="glass-panel p-2 pl-4 flex items-center gap-4 group">
+        <div className="glass-panel p-2 pl-4 flex items-center gap-4 group no-print">
           <input 
             type="text" 
             value={input}
@@ -570,6 +668,36 @@ export default function Dashboard() {
       <aside className="w-64 flex-shrink-0 flex flex-col gap-4">
         <div className="glass-panel p-4 flex-1 flex flex-col gap-6 overflow-y-auto">
           
+          <div className="border-b border-white/10 pb-6">
+            <h2 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Download size={14} /> Export Tools
+            </h2>
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={() => handleExport('finance')}
+                disabled={exporting}
+                className="w-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 py-2 px-3 rounded-lg hover:bg-yellow-500/20 transition-colors text-left flex justify-between items-center"
+              >
+                Export Finance Data
+                {exporting && <Loader2 size={12} className="animate-spin" />}
+              </button>
+              <button 
+                onClick={() => window.print()}
+                className="w-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 py-2 px-3 rounded-lg hover:bg-blue-500/20 transition-colors text-left flex justify-between items-center"
+              >
+                Export Chat as PDF
+              </button>
+              <button 
+                onClick={() => handleExport('hr')}
+                disabled={exporting}
+                className="w-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 py-2 px-3 rounded-lg hover:bg-purple-500/20 transition-colors text-left flex justify-between items-center"
+              >
+                Export HR Data
+                {exporting && <Loader2 size={12} className="animate-spin" />}
+              </button>
+            </div>
+          </div>
+
           <div>
             <h2 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
               <FolderOpen size={14} /> Knowledge Base
@@ -606,14 +734,7 @@ export default function Dashboard() {
                 savedGraphs.map(graph => (
                   <button 
                     key={graph.name} 
-                    onClick={() => {
-                      const a = document.createElement('a');
-                      a.href = graph.url;
-                      a.download = graph.name;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    }}
+                    onClick={() => forceDownload(graph.url, graph.name)}
                     className="flex items-center gap-2 text-left p-2 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/10"
                     title="Click to download"
                   >
@@ -625,30 +746,6 @@ export default function Dashboard() {
                   </button>
                 ))
               )}
-            </div>
-          </div>
-
-          <div className="mt-auto border-t border-white/10 pt-4">
-            <h2 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Download size={14} /> Export Tools
-            </h2>
-            <div className="flex flex-col gap-2">
-              <button 
-                onClick={() => handleExport('finance')}
-                disabled={exporting}
-                className="w-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 py-2 px-3 rounded-lg hover:bg-yellow-500/20 transition-colors text-left flex justify-between items-center"
-              >
-                Export Finance Data
-                {exporting && <Loader2 size={12} className="animate-spin" />}
-              </button>
-              <button 
-                onClick={() => handleExport('hr')}
-                disabled={exporting}
-                className="w-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 py-2 px-3 rounded-lg hover:bg-purple-500/20 transition-colors text-left flex justify-between items-center"
-              >
-                Export HR Data
-                {exporting && <Loader2 size={12} className="animate-spin" />}
-              </button>
             </div>
           </div>
 
