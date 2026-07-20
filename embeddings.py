@@ -7,7 +7,7 @@ Exposes both single and batch encoding.
 from sentence_transformers import SentenceTransformer
 
 # Singleton — loaded once at import time
-_model = SentenceTransformer("all-MiniLM-L6-v2")
+_model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 
 
 def get_embedding(text: str) -> list[float]:
