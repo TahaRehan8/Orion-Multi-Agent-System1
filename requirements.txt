@@ -1,0 +1,34 @@
+# Web API
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# Databases
+qdrant-client
+aiosqlite
+
+# Data Processing & Analytics
+pandas
+numpy
+statsmodels
+plotly
+
+# File Handling & Export
+python-docx
+pypdf
+openpyxl
+
+# Integrations & Utilities
+python-dotenv
+httpx
+gTTS
+langfuse
+
+# AI & ML
+joblib
+scikit-learn
+sentence-transformers
+
+# Hugging Face Spaces SDK
+gradio
