@@ -19,8 +19,16 @@ from sentence_transformers import CrossEncoder
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 PERSIST_DIR = os.path.join(PROJECT_ROOT, "qdrant_db")
 
-# Single persistent client
-_client = QdrantClient(path=PERSIST_DIR)
+# Single persistent client - Use cloud if credentials exist, otherwise local
+_qdrant_url = os.getenv("QDRANT_URL")
+_qdrant_api_key = os.getenv("QDRANT_API_KEY")
+
+if _qdrant_url and _qdrant_api_key:
+    print(f"  [VectorStore] Connecting to Qdrant Cloud at {_qdrant_url}")
+    _client = QdrantClient(url=_qdrant_url, api_key=_qdrant_api_key, timeout=60)
+else:
+    print(f"  [VectorStore] Connecting to local Qdrant at {PERSIST_DIR}")
+    _client = QdrantClient(path=PERSIST_DIR)
 
 # Ingestion batch size — balance memory vs. throughput
 _INGEST_BATCH = 256
