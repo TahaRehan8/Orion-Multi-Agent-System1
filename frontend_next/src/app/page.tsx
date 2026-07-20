@@ -24,6 +24,8 @@ import {
   Square
 } from 'lucide-react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 interface Agent {
   id: string;
   name: string;
@@ -143,7 +145,7 @@ export default function Dashboard() {
       setPlayingId(id);
       
       try {
-        const response = await fetch('http://localhost:8000/tts', {
+        const response = await fetch(`${API_BASE_URL}/tts`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -177,7 +179,7 @@ export default function Dashboard() {
 
   const fetchAgents = async () => {
     try {
-      const res = await fetch('http://localhost:8000/agents');
+      const res = await fetch(`${API_BASE_URL}/agents`);
       const data = await res.json();
       setAvailableAgents(data);
     } catch (e) {
@@ -187,7 +189,7 @@ export default function Dashboard() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch('http://localhost:8000/documents');
+      const res = await fetch(`${API_BASE_URL}/documents`);
       const data = await res.json();
       setDocuments(data);
     } catch (e) {
@@ -197,7 +199,7 @@ export default function Dashboard() {
 
   const fetchGraphs = async () => {
     try {
-      const res = await fetch('http://localhost:8000/graphs');
+      const res = await fetch(`${API_BASE_URL}/graphs`);
       const data = await res.json();
       if (data.success) setSavedGraphs(data.graphs);
     } catch (e) {
@@ -214,7 +216,7 @@ export default function Dashboard() {
 
   const openDocument = async (path: string) => {
     try {
-      await fetch(`http://localhost:8000/documents/open?file_path=${encodeURIComponent(path)}`, {
+      await fetch(`${API_BASE_URL}/documents/open?file_path=${encodeURIComponent(path)}`, {
         method: 'POST'
       });
     } catch (e) {
@@ -225,7 +227,7 @@ export default function Dashboard() {
   const handleExport = async (type: 'finance' | 'hr') => {
     setExporting(true);
     try {
-      const res = await fetch('http://localhost:8000/export/csv', {
+      const res = await fetch(`${API_BASE_URL}/export/csv`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data_type: type })
@@ -245,7 +247,7 @@ export default function Dashboard() {
 
   const handleDownloadLatestChart = async () => {
     try {
-      const res = await fetch('http://localhost:8000/graphs/latest');
+      const res = await fetch(`${API_BASE_URL}/graphs/latest`);
       const data = await res.json();
       if (data.success && data.url) {
         // Trigger download
@@ -294,8 +296,8 @@ export default function Dashboard() {
       setActiveTask('Initializing stream...');
 
       const endpoint = selectedAgentId === 'orchestrator' 
-        ? 'http://localhost:8000/chat/stream' 
-        : `http://localhost:8000/chat/agent/${selectedAgentId}`;
+        ? `${API_BASE_URL}/chat/stream` 
+        : `${API_BASE_URL}/chat/agent/${selectedAgentId}`;
 
       const response = await fetch(endpoint, {
         method: 'POST',

@@ -18,6 +18,8 @@ import {
   Bot
 } from 'lucide-react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 interface CustomAgent {
   id: string;
   name: string;
@@ -80,7 +82,7 @@ export default function AgentLab() {
 
   const fetchAgents = async () => {
     try {
-      const res = await fetch('http://localhost:8000/agents/all');
+      const res = await fetch(`${API_BASE_URL}/agents/all`);
       const data = await res.json();
       // Filter only custom agents
       const custom = data.filter((a: any) => a.is_custom);
@@ -118,7 +120,7 @@ export default function AgentLab() {
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:8000/agents/custom', {
+      const res = await fetch(`${API_BASE_URL}/agents/custom`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,7 +169,7 @@ export default function AgentLab() {
     setLabMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
 
     try {
-      const response = await fetch('http://localhost:8000/lab/chat/stream', {
+      const response = await fetch(`${API_BASE_URL}/lab/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage.content, allowed_agents: [] })
@@ -226,7 +228,7 @@ export default function AgentLab() {
 
   const handleDeploy = async (agentId: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/agents/${agentId}/deploy`, {
+      const res = await fetch(`${API_BASE_URL}/agents/${agentId}/deploy`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -244,7 +246,7 @@ export default function AgentLab() {
     if (!confirm("Are you sure you want to delete this agent?")) return;
     
     try {
-      const res = await fetch(`http://localhost:8000/agents/${agentId}`, {
+      const res = await fetch(`${API_BASE_URL}/agents/${agentId}`, {
         method: 'DELETE'
       });
       const data = await res.json();
