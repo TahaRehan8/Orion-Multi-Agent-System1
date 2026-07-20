@@ -159,7 +159,7 @@ def generate_graph(
     max_categories: int = 15
 ) -> Dict[str, Any]:
     """
-    Generate graph using plotly with proper data aggregation.
+    Generate graph using matplotlib and seaborn (headless).
     
     Args:
         data: DataFrame with data to plot
@@ -169,14 +169,16 @@ def generate_graph(
         y_col: Column for y-axis (values to aggregate)
         save: Whether to save as image
         aggregate: Whether to aggregate data by x_col
-        max_categories: Maximum number of categories to show (prevents cluttered charts)
+        max_categories: Maximum number of categories to show
         
     Returns:
-        Dictionary with graph JSON and optional file path
+        Dictionary with file path and info
     """
     try:
-        import plotly.express as px
-        import plotly.graph_objects as go
+        import matplotlib
+        matplotlib.use('Agg')  # Headless backend (no GUI required)
+        import matplotlib.pyplot as plt
+        import seaborn as sns
         
         if data.empty:
             return {
@@ -189,14 +191,11 @@ def generate_graph(
         non_numeric_cols = [c for c in data.columns if c not in numeric_cols]
         
         if x_col is None:
-            # Prefer categorical columns for x-axis
             x_col = non_numeric_cols[0] if non_numeric_cols else data.columns[0]
         
         if y_col is None:
-            # Prefer numeric columns for y-axis
             y_col = numeric_cols[0] if numeric_cols else (data.columns[1] if len(data.columns) > 1 else data.columns[0])
         
-        # Validate columns exist
         if x_col not in data.columns:
             x_col = data.columns[0]
             
@@ -205,27 +204,21 @@ def generate_graph(
         if not is_count and y_col not in data.columns:
             y_col = numeric_cols[0] if numeric_cols else data.columns[-1]
         
-        # AGGREGATE DATA - This is the key fix!
+        # AGGREGATE DATA
         if aggregate and x_col != y_col:
-            # Group by x_col and sum/count y_col
             if is_count:
-                # Explicit count request
                 plot_data = data.groupby(x_col).size().reset_index(name='count')
                 y_col = 'count'
             elif y_col in numeric_cols:
-                # For numeric y, aggregate by sum
                 plot_data = data.groupby(x_col, as_index=False)[y_col].sum()
             else:
-                # For non-numeric y, count occurrences
                 plot_data = data.groupby(x_col).size().reset_index(name='count')
                 y_col = 'count'
             
-            # Sort by value and limit categories
             plot_data = plot_data.sort_values(y_col, ascending=False).head(max_categories)
         else:
             plot_data = data.head(max_categories)
         
-        # Clean up data for display
         plot_data = plot_data.copy()
         
         # Shorten long category labels
@@ -236,51 +229,51 @@ def generate_graph(
         
         print(f"[GRAPH] Plotting {len(plot_data)} rows, x={x_col}, y={y_col}")
         
+        # Configure dark theme globally for matplotlib
+        plt.style.use('dark_background')
+        sns.set_theme(style="darkgrid", rc={
+            "axes.facecolor": "#0f172a",
+            "figure.facecolor": "#1e293b",
+            "axes.edgecolor": "#334155",
+            "text.color": "#e2e8f0",
+            "axes.labelcolor": "#cbd5e1",
+            "xtick.color": "#94a3b8",
+            "ytick.color": "#94a3b8",
+            "grid.color": "#334155"
+        })
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
         # Create figure based on type
         if graph_type == "line":
-            fig = px.line(
-                plot_data, x=x_col, y=y_col, title=title,
-                markers=True
-            )
+            sns.lineplot(data=plot_data, x=x_col, y=y_col, ax=ax, marker="o", color="#3b82f6")
         elif graph_type == "bar":
-            fig = px.bar(
-                plot_data, x=x_col, y=y_col, title=title,
-                text=y_col  # Show values on bars
-            )
-            fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
+            sns.barplot(data=plot_data, x=x_col, y=y_col, ax=ax, color="#3b82f6")
+            for i in ax.containers:
+                ax.bar_label(i, padding=3, color="#e2e8f0", fmt='%.2s')
         elif graph_type == "pie":
-            fig = px.pie(
-                plot_data, names=x_col, values=y_col, title=title,
-                hole=0.3  # Donut style for better readability
-            )
-            fig.update_traces(textposition='inside', textinfo='percent+label')
+            ax.pie(plot_data[y_col], labels=plot_data[x_col], autopct='%1.1f%%',
+                   startangle=90, colors=sns.color_palette("deep"))
+            centre_circle = plt.Circle((0,0),0.70,fc='#1e293b')
+            fig.gca().add_artist(centre_circle)
+            ax.axis('equal')
         elif graph_type == "scatter":
-            fig = px.scatter(
-                plot_data, x=x_col, y=y_col, title=title,
-                size=y_col if y_col in numeric_cols else None
-            )
+            sns.scatterplot(data=plot_data, x=x_col, y=y_col, ax=ax, color="#3b82f6", s=100)
         else:
-            fig = px.bar(plot_data, x=x_col, y=y_col, title=title)
+            sns.barplot(data=plot_data, x=x_col, y=y_col, ax=ax, color="#3b82f6")
+            
+        ax.set_title(title, fontsize=16, pad=20, color="#e2e8f0")
         
-        # Apply clean dark theme
-        fig.update_layout(
-            template="plotly_dark",
-            paper_bgcolor="#1e293b",
-            plot_bgcolor="#0f172a",
-            font=dict(size=12),
-            title=dict(font=dict(size=18)),
-            margin=dict(l=60, r=40, t=60, b=80),
-            showlegend=True if graph_type == "pie" else False
-        )
-        
-        # Better axis formatting
         if graph_type in ["bar", "line", "scatter"]:
-            fig.update_xaxes(tickangle=45, title=x_col.replace("_", " ").title())
-            fig.update_yaxes(title=y_col.replace("_", " ").title())
+            plt.xticks(rotation=45, ha="right")
+            ax.set_xlabel(x_col.replace("_", " ").title())
+            ax.set_ylabel(y_col.replace("_", " ").title())
+            
+        plt.tight_layout()
         
         result = {
             "success": True,
-            "graph_json": fig.to_json(),
+            "graph_json": "{}", # Not applicable for matplotlib
             "graph_type": graph_type,
             "data_points": len(plot_data),
             "x_column": x_col,
@@ -294,17 +287,19 @@ def generate_graph(
             filepath = GRAPHS_DIR / filename
             
             try:
-                fig.write_image(str(filepath), width=800, height=500, scale=2)
+                fig.savefig(str(filepath), dpi=150, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
                 result["file_path"] = str(filepath)
             except Exception as e:
                 result["save_error"] = f"Could not save image: {str(e)}"
+            finally:
+                plt.close(fig)
         
         return result
         
     except ImportError:
         return {
             "success": False,
-            "error": "plotly not installed. Run: pip install plotly"
+            "error": "matplotlib or seaborn not installed. Run: pip install matplotlib seaborn"
         }
     except Exception as e:
         return {

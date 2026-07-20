@@ -12,8 +12,8 @@ aiosqlite
 pandas
 numpy
 statsmodels
-plotly
-kaleido
+matplotlib
+seaborn
 
 # File Handling & Export
 python-docx
