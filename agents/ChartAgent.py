@@ -397,7 +397,8 @@ Return plain text only."""
 """
         if file_path:
             filename = os.path.basename(file_path)
-            response += f"![{title}](http://localhost:8000/graphs/{filename})\n\n"
+            backend_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
+            response += f"![{title}]({backend_url}/graphs/{filename})\n\n"
             response += f"*Chart saved to: `{file_path}`*"
 
         if inline_df is not None:

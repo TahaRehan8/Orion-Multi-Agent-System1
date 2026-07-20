@@ -445,9 +445,10 @@ async def list_graphs():
         files = list(GRAPHS_PATH.glob("*.png"))
         graphs = []
         for f in sorted(files, key=os.path.getmtime, reverse=True):
+            backend_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
             graphs.append({
                 "name": f.name,
-                "url": f"http://localhost:8000/graphs/{f.name}",
+                "url": f"{backend_url}/graphs/{f.name}",
                 "size": f.stat().st_size
             })
         return {"success": True, "graphs": graphs}
@@ -464,7 +465,8 @@ async def get_latest_graph():
             
         # Get the most recently modified file
         latest_file = max(files, key=os.path.getmtime)
-        return {"success": True, "filename": latest_file.name, "url": f"http://localhost:8000/graphs/{latest_file.name}"}
+        backend_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
+        return {"success": True, "filename": latest_file.name, "url": f"{backend_url}/graphs/{latest_file.name}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
