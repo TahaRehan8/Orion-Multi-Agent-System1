@@ -15,9 +15,11 @@ except Exception:
 
 import gradio as gr
 from backend.api import app as fastapi_app
+import spaces
 
 # Create a dummy Gradio interface just to satisfy Hugging Face Spaces
 # It will never actually be seen because the Next.js frontend calls the API directly
+@spaces.GPU
 def dummy_function():
     return "Orion Multi-Agent RAG API is running on Hugging Face Spaces!"
 
