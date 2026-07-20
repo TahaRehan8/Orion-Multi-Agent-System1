@@ -28,7 +28,3 @@ langfuse
 # AI & ML
 joblib
 scikit-learn
-sentence-transformers
-
-# Hugging Face Spaces SDK
-gradio

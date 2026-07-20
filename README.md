@@ -1,14 +1,3 @@
----
-title: Orion Backend
-emoji: 🚀
-colorFrom: blue
-colorTo: purple
-sdk: gradio
-sdk_version: "5.5.0"
-app_file: app.py
-pinned: false
----
-
 # Orion Multi-Agent Orchestrator
 
 A **Multi-Agent Orchestrator System** that intelligently coordinates specialized AI agents to answer complex enterprise queries securely and accurately.
