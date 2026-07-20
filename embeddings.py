@@ -6,7 +6,7 @@ allowing the application to run smoothly on free server tiers.
 """
 import os
 import time
-import httpx
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,7 +22,7 @@ def _query_api(payload, retries=3):
     """Query the Hugging Face API with basic retry logic for cold starts."""
     for attempt in range(retries):
         try:
-            response = httpx.post(API_URL, headers=headers, json=payload, timeout=30.0)
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=30.0)
             if response.status_code == 200:
                 return response.json()
             elif response.status_code == 503:
@@ -31,13 +31,13 @@ def _query_api(payload, retries=3):
                 continue
             else:
                 response.raise_for_status()
-        except httpx.RequestError as e:
+        except requests.exceptions.RequestException as e:
             if attempt == retries - 1:
                 raise e
             time.sleep(2)
     
     # If we exhaust retries and still didn't get 200
-    response = httpx.post(API_URL, headers=headers, json=payload, timeout=30.0)
+    response = requests.post(API_URL, headers=headers, json=payload, timeout=30.0)
     response.raise_for_status()
     return response.json()
 

@@ -22,9 +22,11 @@ openpyxl
 # Integrations & Utilities
 python-dotenv
 httpx
+requests
 gTTS
 langfuse
 
 # AI & ML
 joblib
 scikit-learn
+sentence-transformers
