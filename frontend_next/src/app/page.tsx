@@ -86,7 +86,7 @@ export default function Dashboard() {
 
   const clearChat = () => {
     if (confirm("Are you sure you want to clear the chat history?")) {
-      const welcomeMsg = {
+      const welcomeMsg: ChatMessage = {
         id: 'welcome',
         role: 'assistant',
         content: '# System Online\nWelcome to the Orion Multi-Agent RAG Orchestrator.',
